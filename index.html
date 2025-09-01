@@ -140,7 +140,7 @@
       </div>
 
       <div>
-        <label for="savingsPercent" title="Investments, emergency fund, FDs, SIPS">
+        <label for="savingsPercent" title="Investments, emergency fund, FDs">
           <!-- Piggy bank icon -->
           <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
             <path d="M3 12a7 7 0 0 1 7-7h3a7 7 0 0 1 7 7v2a3 3 0 0 1-3 3h-1l-1 2H9l-1-2H7a3 3 0 0 1-3-3v-2z" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
@@ -167,7 +167,7 @@
       <p><strong>Wants:</strong> ₹<span id="wants" class="value"></span>
         <small class="muted">(Dining out, entertainment, shopping)</small></p>
       <p><strong>Savings:</strong> ₹<span id="savings" class="value"></span>
-        <small class="muted">(Investments, emergency fund, FD, SIPS)</small></p>
+        <small class="muted">(Investments, emergency fund, FD)</small></p>
     </div>
 
     <div class="chart-container">
@@ -176,104 +176,128 @@
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script>
-    const incomeInput   = document.getElementById('income');
-    const needsInput    = document.getElementById('needsPercent');
-    const wantsInput    = document.getElementById('wantsPercent');
-    const savingsInput  = document.getElementById('savingsPercent');
+<script>
+  const incomeInput   = document.getElementById('income');
+  const needsInput    = document.getElementById('needsPercent');
+  const wantsInput    = document.getElementById('wantsPercent');
+  const savingsInput  = document.getElementById('savingsPercent');
 
-    const resultBox = document.getElementById('resultBox');
-    const needsEl   = document.getElementById('needs');
-    const wantsEl   = document.getElementById('wants');
-    const savingsEl = document.getElementById('savings');
-    const sumChip   = document.getElementById('sumChip');
+  const resultBox = document.getElementById('resultBox');
+  const needsEl   = document.getElementById('needs');
+  const wantsEl   = document.getElementById('wants');
+  const savingsEl = document.getElementById('savings');
+  const sumChip   = document.getElementById('sumChip');
 
-    const ctx = document.getElementById('barChart').getContext('2d');
-    let chart;
+  const ctx = document.getElementById('barChart').getContext('2d');
+  let chart;
 
-    function inr(n){
-      if (isNaN(n)) return '';
-      return n.toLocaleString('en-IN', { maximumFractionDigits: 2 });
+  function inr(n){
+    if (isNaN(n)) return '';
+    return n.toLocaleString('en-IN', { maximumFractionDigits: 2 });
+  }
+
+  function updateSumChip(sum){
+    sumChip.textContent = `Total: ${sum}%`;
+    if (sum !== 100) {
+      sumChip.classList.add('sum-bad');
+    } else {
+      sumChip.classList.remove('sum-bad');
     }
+  }
 
-    function updateSumChip(sum){
-      sumChip.textContent = `Total: ${sum}%`;
-      if (sum !== 100) {
-        sumChip.classList.add('sum-bad');
-      } else {
-        sumChip.classList.remove('sum-bad');
-      }
-    }
-
-    function updateChart(needs, wants, savings) {
-      if (chart) chart.destroy();
-      chart = new Chart(ctx, {
-        type: 'bar',
-        data: {
-          labels: ['Needs', 'Wants', 'Savings'],
-          datasets: [{
-            label: '₹ Value',
-            data: [needs, wants, savings],
-            backgroundColor: ['#60a5fa', '#fca5a5', '#4ade80'],
-            borderRadius: 6
-          }]
-        },
-        options: {
-          animation: { duration: 300 },
-          plugins: {
-            legend: { display: false },
-            tooltip: {
-              callbacks: {
-                label: (ctx) => '₹ ' + inr(ctx.parsed.y)
-              }
+  function updateChart(needs, wants, savings) {
+    if (chart) chart.destroy();
+    chart = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: ['Needs', 'Wants', 'Savings'],
+        datasets: [{
+          label: '₹ Value',
+          data: [needs, wants, savings],
+          backgroundColor: ['#60a5fa', '#fca5a5', '#4ade80'],
+          borderRadius: 6
+        }]
+      },
+      options: {
+        animation: { duration: 300 },
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              label: (ctx) => '₹ ' + inr(ctx.parsed.y)
             }
-          },
-          scales: {
-            y: {
-              beginAtZero: true,
-              ticks: {
-                callback: (value) => '₹' + inr(value)
-              }
+          }
+        },
+        scales: {
+          y: {
+            beginAtZero: true,
+            ticks: {
+              callback: (value) => '₹' + inr(value)
             }
           }
         }
-      });
-    }
-
-    function calculate() {
-      const income = parseFloat(incomeInput.value);
-      const needsPercent = parseFloat(needsInput.value) || 0;
-      const wantsPercent = parseFloat(wantsInput.value) || 0;
-      const savingsPercent = parseFloat(savingsInput.value) || 0;
-
-      const sum = (needsPercent + wantsPercent + savingsPercent);
-      updateSumChip(isNaN(sum) ? 0 : sum);
-
-      if (isNaN(income) || income <= 0 || sum !== 100) {
-        resultBox.style.display = 'none';
-        if (chart) { chart.destroy(); chart = null; }
-        return;
       }
+    });
+  }
 
-      const needs   = +(income * needsPercent   / 100).toFixed(2);
-      const wants   = +(income * wantsPercent   / 100).toFixed(2);
-      const savings = +(income * savingsPercent / 100).toFixed(2);
+  function saveToLocal() {
+    const data = {
+      income: incomeInput.value,
+      needs: needsInput.value,
+      wants: wantsInput.value,
+      savings: savingsInput.value,
+    };
+    localStorage.setItem('budgetData', JSON.stringify(data));
+  }
 
-      needsEl.textContent   = inr(needs);
-      wantsEl.textContent   = inr(wants);
-      savingsEl.textContent = inr(savings);
+  function loadFromLocal() {
+    const saved = JSON.parse(localStorage.getItem('budgetData'));
+    if (saved) {
+      if (saved.income) incomeInput.value = saved.income;
+      if (saved.needs) needsInput.value = saved.needs;
+      if (saved.wants) wantsInput.value = saved.wants;
+      if (saved.savings) savingsInput.value = saved.savings;
+    }
+  }
 
-      resultBox.style.display = 'block';
-      updateChart(needs, wants, savings);
+  function calculate() {
+    const income = parseFloat(incomeInput.value);
+    const needsPercent = parseFloat(needsInput.value) || 0;
+    const wantsPercent = parseFloat(wantsInput.value) || 0;
+    const savingsPercent = parseFloat(savingsInput.value) || 0;
+
+    const sum = (needsPercent + wantsPercent + savingsPercent);
+    updateSumChip(isNaN(sum) ? 0 : sum);
+
+    if (isNaN(income) || income <= 0 || sum !== 100) {
+      resultBox.style.display = 'none';
+      if (chart) { chart.destroy(); chart = null; }
+      saveToLocal();
+      return;
     }
 
-    [incomeInput, needsInput, wantsInput, savingsInput].forEach(input => {
-      input.addEventListener('input', calculate);
-    });
+    const needs   = +(income * needsPercent   / 100).toFixed(2);
+    const wants   = +(income * wantsPercent   / 100).toFixed(2);
+    const savings = +(income * savingsPercent / 100).toFixed(2);
 
-    // Initialize UI state
-    calculate();
-  </script>
+    needsEl.textContent   = inr(needs);
+    wantsEl.textContent   = inr(wants);
+    savingsEl.textContent = inr(savings);
+
+    resultBox.style.display = 'block';
+    updateChart(needs, wants, savings);
+    saveToLocal();
+  }
+
+  [incomeInput, needsInput, wantsInput, savingsInput].forEach(input => {
+    input.addEventListener('input', calculate);
+  });
+
+  // Load saved values on start
+  loadFromLocal();
+  calculate();
+</script>
+
 
 </body>
 </html>
